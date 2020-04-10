@@ -1,0 +1,91 @@
+﻿env:
+   wecube host: 10.107.117.200
+   plugin host: 10.107.119.79
+   
+prepare:
+   mkdir -p /data/wecube/package
+   拷贝安装包内文件到 /data/wecube/package
+
+1. 在两台机器上分别部署docker,
+   1.1 yum install docker
+   1.2 If use tls docker remote api, generate CA in wecube_host:/data/wecube/certs and copy to plugin_host:/data/wecube/certs
+     
+	#generate private key
+    openssl genrsa -aes256 -out ca-key.pem 4096
+    #public key
+    openssl req -new -x509 -days 365 -key ca-key.pem -sha256 -out ca.pem
+	
+	openssl genrsa -out server-key.pem 4096
+	HOST=`hostname`
+	openssl req -subj "/CN=$HOST" -sha256 -new -key server-key.pem -out server.csr   
+	
+	echo subjectAltName = DNS:$HOST,IP:10.107.117.200,IP: 10.107.119.79,IP:127.0.0.1 >> extfile.cnf
+	echo extendedKeyUsage = serverAuth >> extfile.cnf
+	#generate the signed certificate
+	openssl x509 -req -days 365 -sha256 -in server.csr -CA ca.pem -CAkey ca-key.pem \
+	-CAcreateserial -out server-cert.pem -extfile extfile.cnf
+	
+	# create a client key (key.pem)
+	openssl genrsa -out key.pem 4096
+	# create certificate signing request (client.csr)
+	openssl req -subj '/CN=client' -new -key key.pem -out client.csr
+
+	# create a new extensions config file (extfile-client.cnf)
+	echo extendedKeyUsage = clientAuth > extfile-client.cnf
+
+	#generate the signed certificate:(cert.pem)
+	openssl x509 -req -days 365 -sha256 -in client.csr -CA ca.pem -CAkey ca-key.pem \
+	-CAcreateserial -out cert.pem -extfile extfile-client.cnf
+
+	chmod -v 0400 ca-key.pem key.pem server-key.pem
+	chmod -v 0444 ca.pem server-cert.pem cert.pem 
+
+   1.3 setup docker service with ca
+       /etc/docker/daemon.json
+   {
+   "tlsverify": true,
+   "tlscacert": "/data/wecube/certs/ca.pem",
+   "tlscert"  : "/data/wecube/certs/cert.pem",
+   "tlskey"   : "/data/wecube/certs/key.pem",
+   "hosts"    : ["unix:///var/run/docker.sock", "tcp://0.0.0.0:2375"]
+   }
+  
+   1.4 systemctl restart docker
+   验证:
+      netstat -lpn|grep 2375
+  
+2. Add ssh user (wecube) for static resource in wecube host (10.107.117.200).
+    ssh 10.107.117.200
+    adduser wecube
+	passwd wecube (Abcd1234)
+	mkdir -p /data/wecube-portal/data/ui-resources
+	chown wecube /data/wecube-portal/data/ui-resources
+
+3. Setup ssh login in plugin host
+   ssh  10.107.119.79
+   3.1 enable SSH password authentication
+       update file: /etc/ssh/sshd_config
+	   change line: PasswordAuthentication yes
+	   systemctl restart sshd
+   3.2 add user wecube to docker group
+       useradd wecube -G docker
+	   passwd wecube   (Abcd1234)
+	   mkdir -p /data/wecube/plugin_package
+	   chown wecube /data/wecube/plugin_package
+	   
+5. Start wecube platform 
+   
+   cd /data/wecube/package/
+   docker-compose --tlsverify --tlscacert=/data/wecube/certs/ca.pem --tlscert=/data/wecube/certs/cert.pem --tlskey=/data/wecube/certs/key.pem  -f plugin_db.yml -H "http:// 10.107.119.79:2375" up -d
+   sed "s~{{WECUBE_DB_IMAGE_NAME}}~wecube-db:20200409153020-5868dd5~g" wecube_core_mysql.tpl > wecube_core_mysql.yml
+   docker-compose -f wecube_core_mysql.yml  -H "unix:///var/run/docker.sock" up -d
+   sleep 60
+   sh deploy_generate_compose.sh ./target.cfg 20200409153020-5868dd5
+   sed -i "s~{{WECUBE_DB_IMAGE_NAME}}~wecube-db:20200409153020-5868dd5~g" docker-compose.yml  
+   sed -i "s~{{WECUBE_APP_IMAGE_VER}}~20200409153020-5868dd5~g" docker-compose.yml  
+   docker-compose -f docker-compose.yml  -H "unix:///var/run/docker.sock" up -d
+   
+Tips:
+   1. docker --tlsverify --tlscacert=ca.pem --tlscert=cert.pem --tlskey=key.pem -H=$HOST:2376 version
+   2. If error happen when start servie ( b'oci runtime error: container_linux.go:235: starting container process caused "process_linux.go:258: applying cgroup configuration for process caused \\"Cannot set property TasksAccounting, or unknown property.\\)
+      yum update

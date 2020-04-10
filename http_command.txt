@@ -1,0 +1,14 @@
+curl -X POST "http://10.0.3.4:19090/platform/v1/packages" -H "accept: */*" -H "Content-Type: multipart/form-data" -F "zip-file=@/root/temp/sanbox/plugins/wecmdb-v2.27.1.zip;type=application/x-zip-compressed" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJIVFRQLU1PQ0siLCJpYXQiOjE1NzYwNTMxOTcsInR5cGUiOiJhY2Nlc3NUb2tlbiIsImNsaWVudFR5cGUiOiJTVUJfU1lTVEVNIiwiZXhwIjoxNjAxOTczMTk3LCJhdXRob3JpdHkiOiJbU1VCX1NZU1RFTV0ifQ.Wd5rhFX3G-dtqlqYzgnkzd9i8T0xJkkPQSAckzO3V3NWXMCw3B9JWe7JlMjbNtE7va8qce1qcrz6qaa4pB0t5A"
+
+#create docker resource
+curl -d '[{"host":"10.0.3.7","isAllocated":true,"loginPassword":"Abcd1234","loginUsername":"wecube","name":"plugin host3","port":"22","purpose":"host for plugin service","status":"active","type":"docker"}]' -X POST "http://10.0.3.4:19090/platform/resource/servers/create" -H "accept: application/json, text/plain, */*" -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJIVFRQLU1PQ0siLCJpYXQiOjE1NzYwNTMxOTcsInR5cGUiOiJhY2Nlc3NUb2tlbiIsImNsaWVudFR5cGUiOiJTVUJfU1lTVEVNIiwiZXhwIjoxNjAxOTczMTk3LCJhdXRob3JpdHkiOiJbU1VCX1NZU1RFTV0ifQ.Wd5rhFX3G-dtqlqYzgnkzd9i8T0xJkkPQSAckzO3V3NWXMCw3B9JWe7JlMjbNtE7va8qce1qcrz6qaa4pB0t5A"
+
+#create mysql resource
+curl -d '[{"host":"10.0.3.7","isAllocated":true,"loginPassword":"Abcd1234","loginUsername":"root","name":"plugin mysql","port":"3306","purpose":"mysql for plugin service","status":"active","type":"mysql"}]' -X POST "http://10.0.3.4:19090/platform/resource/servers/create" -H "accept: application/json, text/plain, */*" -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJIVFRQLU1PQ0siLCJpYXQiOjE1NzYwNTMxOTcsInR5cGUiOiJhY2Nlc3NUb2tlbiIsImNsaWVudFR5cGUiOiJTVUJfU1lTVEVNIiwiZXhwIjoxNjAxOTczMTk3LCJhdXRob3JpdHkiOiJbU1VCX1NZU1RFTV0ifQ.Wd5rhFX3G-dtqlqYzgnkzd9i8T0xJkkPQSAckzO3V3NWXMCw3B9JWe7JlMjbNtE7va8qce1qcrz6qaa4pB0t5A"
+
+#confirm register
+curl -X POST "http://10.0.3.4:19090/platform/v1/packages/register/wecmdb__v2.26" -H "accept: application/json, text/plain, */*" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJIVFRQLU1PQ0siLCJpYXQiOjE1NzYwNTMxOTcsInR5cGUiOiJhY2Nlc3NUb2tlbiIsImNsaWVudFR5cGUiOiJTVUJfU1lTVEVNIiwiZXhwIjoxNjAxOTczMTk3LCJhdXRob3JpdHkiOiJbU1VCX1NZU1RFTV0ifQ.Wd5rhFX3G-dtqlqYzgnkzd9i8T0xJkkPQSAckzO3V3NWXMCw3B9JWe7JlMjbNtE7va8qce1qcrz6qaa4pB0t5A"
+
+#launch cmdb
+curl -X POST "http://10.0.3.4:19090/platform/v1/packages/wecmdb__v2.26/hosts/10.0.3.7/ports/20000/instance/launch" -H "accept: application/json, text/plain, */*" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJIVFRQLU1PQ0siLCJpYXQiOjE1NzYwNTMxOTcsInR5cGUiOiJhY2Nlc3NUb2tlbiIsImNsaWVudFR5cGUiOiJTVUJfU1lTVEVNIiwiZXhwIjoxNjAxOTczMTk3LCJhdXRob3JpdHkiOiJbU1VCX1NZU1RFTV0ifQ.Wd5rhFX3G-dtqlqYzgnkzd9i8T0xJkkPQSAckzO3V3NWXMCw3B9JWe7JlMjbNtE7va8qce1qcrz6qaa4pB0t5A"
+
